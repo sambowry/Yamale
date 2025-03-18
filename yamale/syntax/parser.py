@@ -31,6 +31,7 @@ def parse(validator_string, validators=None):
     validators = validators or val.DefaultValidators
     try:
         import datetime
+
         if validator_string == None:
           tree = ast.parse( f"null()", mode="eval")
         elif isinstance( validator_string, datetime.datetime ):
@@ -40,7 +41,14 @@ def parse(validator_string, validators=None):
         elif not isinstance(validator_string,str):
           tree = ast.parse( f"enum({repr(validator_string)})", mode="eval")
         else:
-          tree = ast.parse( validator_string, mode="eval")
+          import re
+          for vk in validators.keys():
+              if re.match('^\s*'+vk+'\s*\(.*\)\s*$', validator_string):
+                  tree = ast.parse( validator_string, mode="eval")
+                  break
+          else:
+              tree = ast.parse( 'str('+repr(validator_string)+')', mode="eval")
+
         _validate_expr(tree.body, validators)
         # evaluate with access to a limited global scope only
         return eval(compile(tree, "<ast>", "eval"), {"__builtins__": safe_builtins}, validators)

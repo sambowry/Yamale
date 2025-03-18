@@ -83,17 +83,18 @@ class Validator(object):
 
         # Then validate all the constraints second.
         for constraint in self._constraints_inst:
-            if hasattr( constraint, '_is_valid_path' ):
-              error = constraint.is_valid_path(path)
+            if not constraint.pre_check:
+                if hasattr( constraint, '_is_valid_path' ):
+                  error = constraint.is_valid_path(path)
 
-            if hasattr( constraint, '_is_valid' ):
-              error = constraint.is_valid(value)
+                if hasattr( constraint, '_is_valid' ):
+                  error = constraint.is_valid(value)
 
-            if error:
-                if isinstance(error, list):
-                    errors.extend(error)
-                else:
-                    errors.append(error)
+                if error:
+                    if isinstance(error, list):
+                        errors.extend(error)
+                    else:
+                        errors.append(error)
 
         return errors
 

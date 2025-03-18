@@ -25,6 +25,7 @@ class ValidationResult(Result):
             if self.schema:
                 head_line_bits.append("with schema '{}'".format(self.schema))
             head_line = " ".join(head_line_bits)
-            head_line += "\n\t"
-            error_str = head_line + "\n\t".join(self.errors)
+            error_str = head_line
+            for err in self.errors:
+              error_str += "\n\t" + str(err)
         return error_str
