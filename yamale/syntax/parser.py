@@ -1,4 +1,5 @@
 import ast
+import re
 
 from .. import validators as val
 
@@ -41,7 +42,6 @@ def parse(validator_string, validators=None):
         elif not isinstance(validator_string,str):
           tree = ast.parse( f"enum({repr(validator_string)})", mode="eval")
         else:
-          import re
           for vk in validators.keys():
               if re.match('^\s*'+vk+'\s*\(.*\)\s*$', validator_string):
                   tree = ast.parse( validator_string, mode="eval")
