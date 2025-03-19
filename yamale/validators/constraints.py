@@ -73,6 +73,42 @@ class Constraint(object):
         return "'%s' violates %s." % (value, self.__class__.__name__)
 
 
+class Validator_or_Value:
+    def __init__(self, value):
+        self.value = value
+
+    def validate( self, value ):
+        self.errors = []
+        if   isinstance( self.value, Validator ):
+            self.errors = self.value.validate( value )
+        elif type(self.value) is type(value):
+            if self.value != value:
+                self.errors = [ f"{self.value} != {value}" ]
+        elif isinstance( self.value, str ):
+            if self.value != str(value):
+                self.errors = [ f"{self.value} != {value}" ]
+        else:
+            self.errors = [ f"{self.value} != {value}" ]
+        return self.errors
+
+
+class KeywordList_meta(type):
+    def __str__(self):
+        return f"one of {self.keywords}"
+
+
+def KeywordList_class( *keyword_list ):
+    class KeywordList(metaclass=KeywordList_meta):
+        keywords = keyword_list
+
+        def __init__(self, value):
+            self.keyword = value.lower()
+            if self.keyword not in self.keywords:
+                raise ValueError
+
+    return KeywordList
+
+
 class Min(Constraint):
     fail = "%s is less than %s"
 
@@ -124,7 +160,7 @@ class LengthMax(Constraint):
 
 
 class Key(Constraint):
-    keywords = {"key": Validator}
+    keywords = {"key": Validator_or_Value}
     fail = "Key error - %s"
 
     def _is_valid(self, value):
@@ -282,21 +318,6 @@ class IpVersion(Constraint):
         return self.fail % (value, self.version)
 
 
-class KeywordList_meta(type):
-    def __str__(self):
-        return f"one of {self.keywords}"
-
-def KeywordList_class( *keyword_list ):
-    class KeywordList(metaclass=KeywordList_meta):
-        keywords = keyword_list
-
-        def __init__(self, value):
-            self.keyword = value.lower()
-            if self.keyword not in self.keywords:
-                raise ValueError
-
-    return KeywordList
-
 class IpPrefix(Constraint):
     keywords = {"prefix": KeywordList_class('length', 'mask', 'any', 'none') }
 
@@ -312,26 +333,10 @@ class IpPrefix(Constraint):
         return "IP prefix of %s is not '%s'" % (value, self.prefix.keyword)
 
 
-class Validator_or_String:
-    def __init__(self, value):
-        self.value = value
-
-    def validate( self, value ):
-        if   isinstance( self.value, Validator ):
-            result = ( [] == self.value.validate( value ) )
-        elif type(self.value) is type(value):
-            result =         self.value == value
-        elif isinstance( self.value, str ):
-            result =         self.value == str(value)
-        else:
-            result = False
-        return result
-
-
 class NodeName(Constraint):
     pre_check = True
     universal = True
-    keywords  = {"name": Validator_or_String}
+    keywords  = {"name": Validator_or_Value }
 
     def _is_valid_path(self, path):
         result = self.name.validate( path._path[-1] if len(path._path) > 0 else '<document>' )

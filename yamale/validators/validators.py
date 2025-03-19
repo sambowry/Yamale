@@ -195,10 +195,66 @@ class List(Validator):
 
     def __init__(self, *args, **kwargs):
         super(List, self).__init__(*args, **kwargs)
-        self.validators = [val for val in args if isinstance(val, Validator)]
+
+        self.literals   = []
+        self.validators = []
+        for val in args:
+            if isinstance(val, Validator):
+                self.validators.append( val )
+            else:
+                self.literals.append( val )
+
+        if self.literals:
+            self.validators.append( Enum( *self.literals ) )
 
     def _is_valid(self, value):
         return isinstance(value, Sequence) and not util.isstr(value)
+
+
+class Split(Validator):
+    """String parts validator"""
+
+    tag = "split"
+
+    def __init__(self, *args, **kwargs):
+        self.separator  = kwargs.pop("separator", '[,\s]')
+        self.maxsplit   = kwargs.pop("maxsplit", 0)
+
+        self.literals   = []
+        self.validators = []
+        for val in args:
+            if isinstance(val, Validator):
+                self.validators.append( val )
+            else:
+                self.literals.append( val )
+
+        if self.literals:
+            self.validators.append( Enum( *self.literals ) )
+
+        super(Split, self).__init__(*args, **kwargs)
+
+    def _is_valid(self, value):
+        self.errors = []
+        if isinstance( value, str ):
+            parts = re.split( self.separator, value, self.maxsplit )
+            for p in parts:
+                sub_errors = []
+                for v in self.validators:
+                    errors = v.validate(p)
+                    if errors:
+                        sub_errors += errors
+                    else:
+                        break
+                else:
+                    self.errors += sub_errors
+                if self.errors:
+                    break
+        else:
+            self.errors += [ "'%s' is not a string" % ( str(value) ) ]
+        return self.errors == []
+
+    def fail(self, value):
+        return "'%s' split by '%s' is not matching because %s" % (value, self.separator, '; '.join( self.errors ) )
 
 
 class Include(Validator):
@@ -386,17 +442,24 @@ class Ip(Validator):
     constraints = [con.IpVersion, con.IpPrefix]
 
     def __init__(self, *args, **kwargs):
-        self.strict = bool(kwargs.get("strict", False))
+        self.is_mask = bool(kwargs.get("is_mask", False))
+        self.strict  = bool(kwargs.get("strict",  False))
         super(Ip, self).__init__(*args, **kwargs)
 
     def _is_valid(self, value):
-        return self.ip_address(value)
+        return self.is_ip_address(value, self.is_mask)
 
-    def ip_address(self, value):
+
+    def is_ip_address(self, value, is_mask):
         try:
             ip = ipaddress.ip_network(util.to_unicode(value), self.strict)
         except ValueError:
             return False
+        if ip.version == 4 and is_mask:
+            try:
+                ipaddress.ip_network('0.0.0.0/'+util.to_unicode(value), False)
+            except ValueError:
+                return False
         return True
 
     def fail(self, value):
