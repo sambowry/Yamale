@@ -339,11 +339,13 @@ class NodeName(Constraint):
     keywords  = {"name": Validator_or_Value }
 
     def _is_valid_path(self, path):
-        result = self.name.validate( path._path[-1] if len(path._path) > 0 else '<document>' )
-        return result
+        nodename = path._path[-1] if len(path._path) > 0 else '<document>'
+        self.errors = self.name.validate( nodename )
+        return not self.errors
 
     def _fail_path(self, path):
-        return [ "Node name '%s' is not '%s'" % ( (path._path[-1] if len(path._path) > 0 else '<document>'), str(self.name.value) ) ]
+        nodename = path._path[-1] if len(path._path) > 0 else '<document>'
+        return [ "Node name '%s' is not '%s' because %s" % ( nodename, str(self.name.value), '; '.join( self.errors ) ) ]
 
 
 class FileLine(Constraint):
