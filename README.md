@@ -272,8 +272,9 @@ Some validators take keywords and some take arguments, some take both. For insta
 validator takes one or more constants as arguments and the `required` keyword:
 `enum('a string', 1, False, required=False)`
 
-### String - `str(min=int, max=int, equals=string, starts_with=string, ends_with=string, matches=regex, exclude=string, ignore_case=False, multiline=False, dotall=False)`
+### String - `str([primitives],min=int, max=int, equals=string, starts_with=string, ends_with=string, matches=regex, exclude=string, ignore_case=False, multiline=False, dotall=False)`
 Validates strings.
+- arguments: constants to test equality with
 - keywords
     - `min`: len(string) >= min
     - `max`: len(string) <= max
@@ -316,20 +317,23 @@ Examples:
 - `regex('.*^apples$', multiline=True, dotall=True)`: Allows the string `apples` as well
   as multiline strings that contain the line `apples`.
 
-### Integer - `int(min=int, max=int)`
+### Integer - `int([primitives], min=int, max=int)`
 Validates integers.
+- arguments: constants to test equality with
 - keywords
     - `min`: int >= min
     - `max`: int <= max
 
-### Number - `num(min=float, max=float)`
+### Number - `num([primitives], min=float, max=float)`
 Validates integers and floats.
+- arguments: constants to test equality with
 - keywords
     - `min`: num >= min
     - `max`: num <= max
 
-### Boolean - `bool()`
+### Boolean - `bool([primitives])`
 Validates booleans.
+- arguments: constants to test equality with
 
 ### Null - `null()`
 Validates null values.
@@ -341,8 +345,9 @@ Validates from a list of constants.
 Examples:
 - `enum('a string', 1, False)`: a value can be either `'a string'`, `1` or `False`
 
-### Day - `day(min=date, max=date)`
+### Day - `day([primitives], min=date, max=date)`
 Validates a date in the form of YYYY-MM-DD.
+- arguments: constants to test equality with
 - keywords
     - `min`: date >= min
     - `max`: date <= max
@@ -350,8 +355,9 @@ Validates a date in the form of YYYY-MM-DD.
 Examples:
 - `day(min='2001-01-01', max='2100-01-01')`: Only allows dates between 2001-01-01 and 2100-01-01.
 
-### Timestamp - `timestamp(min=time, max=time)`
+### Timestamp - `timestamp([primitives], min=time, max=time)`
 Validates a timestamp in the form of YYYY-MM-DD HH:MM:SS.
+- arguments: constants to test equality with
 - keywords
     - `min`: time >= min
     - `max`: time <= max
@@ -360,11 +366,11 @@ Examples:
 - `timestamp(min='2001-01-01 01:00:00', max='2100-01-01 23:00:00')`: Only allows times between
   2001-01-01 01:00:00 and 2100-01-01 23:00:00.
 
-### List - `list([validators], min=int, max=int)`
+### List - `list([primitives and/or validators], min=int, max=int)`
 Validates lists. If one or more validators are passed to `list()` only nodes that pass at
 least one of those validators will be accepted.
 
-- arguments: one or more validators to test values with
+- arguments: one or more primitives and/or validators to test values with
 - keywords
     - `min`: len(list) >= min
     - `max`: len(list) <= max
@@ -396,11 +402,23 @@ Validates IPv4 and IPv6 addresses.
 
 - keywords
     - `version`: 4 or 6; explicitly force IPv4 or IPv6 validation
+    - `is_mask`: True/False, an IPv4 address should be a netmask (like 255.255.255.0) or not
+    - `strict`: True/False, if True then no host bit must be set in the address
+    - `prefix`: "length", "mask", "any" or "none", specifies the prefix format to be accepted
 
 Examples:
 - `ip()`: Allows any valid IPv4 or IPv6 address
 - `ip(version=4)`: Allows any valid IPv4 address
 - `ip(version=6)`: Allows any valid IPv6 address
+
+### FQDN - `fqdn()`
+Validates fully qualified domain names by DNS query or regex match
+- keywords
+    - `matches`: regex
+    - `resolve`: True/False
+    - `type`: "domain" or "host"
+    - `min`: minimum number of domain labels
+    - `max`: maximum number of domain labels
 
 ### MAC Address - `mac()`
 Validates MAC addresses.
@@ -414,7 +432,7 @@ Validates [Semantic Versioning](https://semver.org/) strings.
 Examples:
 - `semver()`: Allows any valid SemVer string
 
-### Any - `any([validators])`
+### Any - `any([primitives and/or validators])`
 Validates against a union of types. Use when a node **must** contain **one and only one** of several types. It is valid
 if at least one of the listed validators is valid. If no validators are given, accept any value.
 - arguments: validators to test values with (if none is given, allow any value; if one or more are given,
@@ -425,6 +443,12 @@ Examples:
 - `any(num(), include('vector'))`: Validates **either** a number **or** an included 'vector' type.
 - `any(str(min=3, max=3),str(min=5, max=5),str(min=7, max=7))`: validates to a string that is exactly 3, 5, or 7 characters long
 - `any()`: Allows any value.
+
+### All - `all([primitives and/or validators])`
+It is valid if all of the listed primitives and/or validators is matching.
+
+### NotAny - `notany([primitives and/or validators])`
+It is valid if not any of the listed primitives and/or validators is matching.
 
 ### Subset - `subset([validators], allow_empty=False)`
 Validates against a subset of types. Unlike the `Any` validator, this validators allows **one or more** of several types.
@@ -445,6 +469,17 @@ Validates included structures. Must supply the name of a valid include.
 
 Examples:
 - `include('person')`
+
+### FileLine - `file_line(file_names)`
+- arguments: file names to check for the presence of texts
+- keywords
+    - `method`: 'equals', 'contains', 'starts_with', 'ends_with'
+    - `encoding`:
+    - `ignore_case`: True/False
+    - `matches`: regex, with capturing groups
+    - `replace`: replacement pattern, with backreferences to captured groups (e.q. \\g<1>)
+    - `found`: file name, append found value to the named file
+    - `not_found`: file name, append not found value to the named file
 
 ### Custom validators
 It is also possible to add your own custom validators. This is an advanced topic, but here is an
