@@ -55,7 +55,7 @@ looking up the directory tree until it finds one. If Yamale can not find a schem
 Usage:
 
 ```
-usage: yamale [-h] [-s SCHEMA] [-e PATTERN] [-p PARSER] [-n CPU_NUM] [-x] [-v] [-V] [PATH ...]
+usage: yamale [-h] [-s SCHEMA]... [-e PATTERN] [-p PARSER] [-n CPU_NUM] [-x] [-v] [-V] [PATH ...]
 
 Validate yaml files.
 
@@ -66,6 +66,7 @@ options:
   -h, --help            show this help message and exit
   -s SCHEMA, --schema SCHEMA
                         filename of schema. Default is schema.yaml.
+                        multiple schemas can be specified, the first is the main schema, the others are subschemas containing definitions
   -e PATTERN, --exclude PATTERN
                         Python regex used to exclude files from validation. Any substring match of a file's absolute path will be excluded. Uses
                         default Python3 regex. Option can be supplied multiple times.
